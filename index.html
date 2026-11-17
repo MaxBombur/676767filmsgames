@@ -70,6 +70,11 @@ dialog::backdrop{background:rgba(10,12,30,.6)}
 #pform h2{font:700 20px var(--disp);margin:0 0 14px;letter-spacing:-.02em}#rnd{margin-bottom:14px;font-weight:600}
 .fv{position:absolute;left:8px;top:8px;background:var(--surf);border-radius:999px;padding:2px 7px;font-size:14px}
 .sb{border:0;background:none;cursor:pointer;font-size:20px;line-height:1;padding:0 4px;color:var(--mute)}.sb.on{color:#f5b800}
+#sres{max-height:236px;overflow-y:auto;margin-top:4px}
+.sr{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:5px 10px 5px 5px;margin-top:6px;border:1.5px solid var(--line);background:var(--surf);color:var(--ink);border-radius:12px;cursor:pointer}
+.sr:hover{border-color:var(--acc)}
+.sr img,.sr i{width:32px;height:46px;border-radius:6px;object-fit:cover;flex:none;background:var(--soft)}
+.srt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.srt b{font-weight:600}
 </style></head><body><main id="app">
 <div class="top"><div><h1>Мой список</h1><p class="sub" id="sub">Игры, которые прошёл, и фильмы, которые посмотрел.</p><div class="m" id="bk" style="margin:-8px 0 14px;color:var(--acc);font-weight:600"></div></div><div class="stats" id="stats"></div></div>
 <div style="margin:-6px 0 14px"><button class="chip" id="theme" title="Сменить тему"></button></div>
@@ -265,7 +270,7 @@ async function find(){
    var gm=await genres(kind,CF.tmdb);
    R=(j.results||[]).slice(0,6).map(function(m){return{t:m.title||m.name,y:(m.release_date||m.first_air_date||'').slice(0,4),p:m.poster_path?'https://image.tmdb.org/t/p/w342'+m.poster_path:'',g:(m.genre_ids||[]).map(function(i){return gm[i]}).filter(Boolean).slice(0,3),pl:''}})}
  }catch(e){box.innerHTML='<div class="m">'+(e==='key'?'Ключ не подошёл. Проверь, что он скопирован целиком и без пробелов.':'Не удалось найти. Проверь ключ и интернет.')+'</div>';return}
- SR=R;box.innerHTML=R.length?R.map(function(r,i){return'<button class="chip" type="button" data-sr="'+i+'" style="display:flex;gap:10px;align-items:center;width:100%;text-align:left;margin-top:6px;border-radius:12px"><span class="ava" style="width:34px;height:48px;border-radius:6px;font-size:14px">'+(img(r.p)?'<img src="'+esc(r.p)+'" alt="">':'')+'</span><span>'+esc(r.t)+' <span class="m">'+esc(r.y)+'</span></span></button>'}).join(''):'<div class="m">Ничего не найдено.</div>'}
+ SR=R;box.innerHTML=R.length?R.map(function(r,i){return'<button class="sr" type="button" data-sr="'+i+'">'+(img(r.p)?'<img src="'+esc(r.p)+'" alt="" loading="lazy">':'<i></i>')+'<span class="srt"><b>'+esc(r.t)+'</b> <span class="m">'+esc(String(r.y||''))+(r.g.length?' · '+esc(r.g.join(', ')):'')+'</span></span></button>'}).join(''):'<div class="m">Ничего не найдено.</div>'}
 $('find').onclick=find;
 $('title').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();find()}};
 $('sres').onclick=function(e){var b=e.target.closest('[data-sr]');if(!b)return;var r=SR[+b.dataset.sr];if(!r)return;
