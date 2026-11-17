@@ -75,6 +75,11 @@ dialog::backdrop{background:rgba(10,12,30,.6)}
 .sr:hover{border-color:var(--acc)}
 .sr img,.sr i{width:32px;height:46px;border-radius:6px;object-fit:cover;flex:none;background:var(--soft)}
 .srt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.srt b{font-weight:600}
+#gpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.gc{border:1.5px solid var(--line);background:var(--surf);color:var(--ink);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}.gc.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.bc{display:flex;align-items:flex-end;gap:6px;height:120px;margin:22px 0 28px}.bcg{flex:1;display:flex;align-items:flex-end;gap:2px;height:100%;position:relative;min-width:0}.bcb{flex:1;border-radius:5px 5px 2px 2px;position:relative}.bcb b{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;white-space:nowrap}.bcg i{position:absolute;top:100%;margin-top:4px;left:0;right:0;text-align:center;font:500 10px var(--disp);font-style:normal;color:var(--mute)}
+.hb{display:grid;grid-template-columns:minmax(80px,140px) 1fr 40px;gap:8px;align-items:center;margin:7px 0;font-size:14px}.hb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb div{background:var(--soft);border-radius:6px;height:12px}.hb u{display:block;height:100%;border-radius:6px}.hb b{text-align:right}
+.rbox{grid-column:1/-1;background:var(--surf);border:1.5px solid var(--line);border-radius:18px;padding:14px 18px 4px}.rbox h3{font:700 15px var(--disp);margin:0 0 4px;letter-spacing:-.01em}
+.ctl .hin{width:92px;padding:5px 8px;font-size:13px;border-radius:8px}
 </style></head><body><main id="app">
 <div class="top"><div><h1>Мой список</h1><p class="sub" id="sub">Игры, которые прошёл, и фильмы, которые посмотрел.</p><div class="m" id="bk" style="margin:-8px 0 14px;color:var(--acc);font-weight:600"></div></div><div class="stats" id="stats"></div></div>
 <div style="margin:-6px 0 14px"><button class="chip" id="theme" title="Сменить тему"></button></div>
@@ -94,7 +99,8 @@ dialog::backdrop{background:rgba(10,12,30,.6)}
  <div class="row"><button class="chip on" data-t="game">🎮 Игра</button><button class="chip" data-t="movie">🎬 Фильм</button><button class="chip" data-t="series">📺 Сериал</button><button class="chip" data-t="anime">🍥 Аниме</button><button class="chip" data-t="book">📚 Книга</button></div>
  <div class="row" style="margin-top:10px"><input type="text" id="title" placeholder="Название" maxlength="120" style="flex:3 1 200px"><button class="btn alt" id="find" type="button">🔍 Найти</button></div><div id="sres"></div>
  <div class="row" style="margin-top:8px"><select id="status"><option value="done">✅ Прошёл</option><option value="playing">▶️ Сейчас</option><option value="want">🕐 Хочу</option><option value="dropped">⛔ Бросил</option></select><input type="date" id="date"><input type="text" id="platform" placeholder="Платформа (PC, PS5…)"><input type="number" id="hours" min="0" step="0.5" placeholder="Часов"></div>
- <div class="row" style="margin-top:8px"><input type="text" id="tags" placeholder="Жанры через запятую" style="flex:3 1 200px"><label class="chip pick" style="flex:1 1 120px;text-align:center"><input type="file" id="pic" accept="image/*" hidden><span id="picTxt">🖼 Обложка</span></label></div>
+ <div class="row" style="margin-top:8px"><input type="text" id="tags" placeholder="Свой жанр + Enter" style="flex:3 1 200px"><label class="chip pick" style="flex:1 1 120px;text-align:center"><input type="file" id="pic" accept="image/*" hidden><span id="picTxt">🖼 Обложка</span></label></div>
+ <div class="m" style="margin-top:12px">Жанры (можно выбрать несколько)</div><div id="gpick"></div>
  <div class="m" style="margin-top:12px">Оценка (обязательна для «Прошёл» и «Посмотрел»)</div><div class="rate" id="rate"></div>
  <div style="margin-top:10px"><button class="chip" id="favnew" type="button">☆ В любимое</button></div>
  <textarea id="note" placeholder="Заметка (необязательно)" maxlength="500"></textarea>
@@ -155,20 +161,29 @@ $('favnew').onclick=function(){favNew=!favNew;this.textContent=favNew?'⭐ В л
 function paint(){[].forEach.call(rt.children,function(b,i){b.classList.toggle('on',i+1===rating)})}
 function chk(){$('add').disabled=!($('title').value.trim()&&($('status').value!=='done'||rating))}
 $('title').oninput=chk;$('status').onchange=chk;$('date').value=new Date().toISOString().slice(0,10);
-$('form').onclick=function(e){var t=e.target.dataset.t;if(!t)return;type=t;setLabels(t);[].forEach.call(document.querySelectorAll('[data-t]'),function(b){b.classList.toggle('on',b.dataset.t===t)});$('hours').style.display=$('platform').style.display=t==='game'?'':'none'};
+$('form').onclick=function(e){var t=e.target.dataset.t;if(!t)return;type=t;setLabels(t);renderG();[].forEach.call(document.querySelectorAll('[data-t]'),function(b){b.classList.toggle('on',b.dataset.t===t)});$('hours').style.display=$('platform').style.display=t==='game'?'':'none'};
 function tagsOf(s){return s.split(',').map(function(x){return x.trim()}).filter(Boolean).slice(0,8)}
+var FM='Драма,Комедия,Боевик,Триллер,Ужасы,Фантастика,Фэнтези,Приключения,Детектив,Криминал,Мелодрама,Мультфильм,Документальный,Семейный,Военный,Исторический,Биография,Мюзикл,Вестерн,Спорт,Нуар,Психологический'.split(',');
+var GL={game:'Экшен,RPG,Приключения,Шутер,Стратегия,Симулятор,Платформер,Головоломка,Гонки,Спорт,Файтинг,Хоррор,Выживание,Открытый мир,Roguelike,Метроидвания,Инди,Кооператив,MMO,Визуальная новелла,Песочница,Карточная'.split(','),movie:FM,series:FM,anime:'Сёнэн,Сёдзё,Сэйнэн,Исэкай,Меха,Повседневность,Романтика,Школа,Экшен,Комедия,Драма,Фэнтези,Фантастика,Ужасы,Детектив,Психологическое,Спорт,Приключения'.split(','),book:'Фантастика,Фэнтези,Детектив,Роман,Триллер,Ужасы,Классика,Нон-фикшн,Научпоп,Биография,История,Психология,Саморазвитие,Бизнес,Поэзия,Комикс,Манга,Приключения'.split(',')},G=[];
+var EN={Action:'Экшен',Adventure:'Приключения',Strategy:'Стратегия',Shooter:'Шутер',Simulation:'Симулятор',Platformer:'Платформер',Racing:'Гонки',Puzzle:'Головоломка',Fighting:'Файтинг',Indie:'Инди',Sports:'Спорт',Horror:'Хоррор',Casual:'Казуальная',Arcade:'Аркада','Massively Multiplayer':'MMO',Family:'Семейная','Board Games':'Настольная',Educational:'Обучающая',Card:'Карточная','Science fiction':'Фантастика',Fantasy:'Фэнтези',Fiction:'Роман',Mystery:'Детектив',Thriller:'Триллер',History:'История',Biography:'Биография',Romance:'Романтика'};
+function renderG(){var base=GL[type]||[],all=base.concat(G.filter(function(g){return base.indexOf(g)<0}));$('gpick').innerHTML=all.map(function(g){return'<button type="button" class="gc'+(G.indexOf(g)>-1?' on':'')+'" data-g="'+esc(g)+'">'+esc(g)+'</button>'}).join('')}
+function addG(g){if(g&&G.indexOf(g)<0&&G.length<8)G.push(g)}
+function mapG(a){return a.map(function(g){return EN[g]||g}).filter(function(g){return /[а-яё]/i.test(g)||(GL[type]||[]).indexOf(g)>-1}).slice(0,3)}
+$('gpick').onclick=function(e){var b=e.target.closest('[data-g]');if(!b)return;var g=b.dataset.g,i=G.indexOf(g);if(i>-1)G.splice(i,1);else addG(g);renderG()};
+$('tags').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();tagsOf($('tags').value).forEach(addG);$('tags').value='';renderG()}};
+renderG();
 $('open').onclick=function(){$('dlg').showModal();$('title').focus()};$('cancel').onclick=function(){$('dlg').close()};
 $('add').onclick=function(){var g=type==='game';
- var nit=norm({type:type,title:$('title').value.trim(),status:$('status').value,rating:rating,note:$('note').value.trim(),pic:pic,hours:g&&$('hours').value?+$('hours').value:0,platform:g?$('platform').value.trim():'',tags:tagsOf($('tags').value),date:$('date').value,fav:favNew});mine().unshift(nit);put(nit);
- ['title','note','hours','platform','tags'].forEach(function(k){$(k).value=''});pic='';$('picTxt').textContent='🖼 Обложка';rating=0;$('sres').innerHTML='';favNew=false;$('favnew').textContent='☆ В любимое';$('favnew').classList.remove('on');paint();chk();render();$('dlg').close()};
+ var nit=norm({type:type,title:$('title').value.trim(),status:$('status').value,rating:rating,note:$('note').value.trim(),pic:pic,hours:g&&$('hours').value?+$('hours').value:0,platform:g?$('platform').value.trim():'',tags:G.concat(tagsOf($('tags').value)).filter(function(g,i,a){return a.indexOf(g)===i}).slice(0,8),date:$('date').value,fav:favNew});mine().unshift(nit);put(nit);
+ ['title','note','hours','platform','tags'].forEach(function(k){$(k).value=''});pic='';$('picTxt').textContent='🖼 Обложка';rating=0;G=[];renderG();$('sres').innerHTML='';favNew=false;$('favnew').textContent='☆ В любимое';$('favnew').classList.remove('on');paint();chk();render();$('dlg').close()};
 
 /* list interactions */
 ['q','ftype','fstatus','ftag','sort'].forEach(function(k){$(k).oninput=render});
 $('fav').onclick=function(){fav=!fav;this.classList.toggle('on',fav);render()};
 $('dice').onclick=function(){var w=cur().filter(function(x){return x.status==='want'&&($('ftype').value==='all'||x.type===$('ftype').value)});$('rnd').textContent=w.length?'🎲 Сегодня: '+w[Math.floor(Math.random()*w.length)].title:'В списке «Хочу» пока пусто.'};
-$('list').onclick=function(e){if(view!=='me')return;var fb=e.target.closest('[data-fav]');if(fb){var fi=mine().filter(function(x){return x.id===fb.dataset.fav})[0];if(fi){fi.fav=!fi.fav;put(fi);render()}return}var a=e.target.closest('[data-ava]');if(a){editId=a.dataset.ava;$('pic2').click();return}
+$('list').onclick=function(e){var rb=e.target.closest('[data-rp]');if(rb){rp=rb.dataset.rp;render();return}if(view!=='me')return;var hb=e.target.closest('[data-hadd]');if(hb){var hi=mine().filter(function(x){return x.id===hb.dataset.hadd})[0];if(hi){hi.hours=Math.round((hi.hours+1)*10)/10;put(hi);render()}return}var fb=e.target.closest('[data-fav]');if(fb){var fi=mine().filter(function(x){return x.id===fb.dataset.fav})[0];if(fi){fi.fav=!fi.fav;put(fi);render()}return}var a=e.target.closest('[data-ava]');if(a){editId=a.dataset.ava;$('pic2').click();return}
  var d=e.target.closest('[data-del]');if(d){if(d.dataset.arm){del(d.dataset.del);render()}else{d.dataset.arm=1;d.textContent='Удалить?';d.style.fontSize='13px';setTimeout(function(){d.dataset.arm='';d.textContent='×';d.style.fontSize=''},3000)}}};
-$('list').onchange=function(e){if(e.target.id==='ryear'){ry=e.target.value;render();return}var d=e.target.dataset,id=d.st||d.rt;if(!id||view!=='me')return;var it=mine().filter(function(x){return x.id===id})[0];if(it){if(d.st)it.status=e.target.value;else it.rating=+e.target.value;put(it);render()}};
+$('list').onchange=function(e){if(e.target.id==='rper'){rper=e.target.value;render();return}var d=e.target.dataset,id=d.st||d.rt||d.h;if(!id||view!=='me')return;var it=mine().filter(function(x){return x.id===id})[0];if(it){if(d.st)it.status=e.target.value;else if(d.h)it.hours=Math.max(0,Math.round((+e.target.value||0)*10)/10);else it.rating=+e.target.value;put(it);render()}};
 
 /* files */
 function readJson(f,cb){var rd=new FileReader();rd.onload=function(){try{cb(JSON.parse(rd.result))}catch(e){$('pubmsg').textContent='Не удалось прочитать файл.'}};rd.readAsText(f)}
@@ -219,7 +234,7 @@ function render(){
   var ro='<option value="0">—</option>';for(var n=10;n>=1;n--)ro+='<option value="'+n+'"'+(n===x.rating?' selected':'')+'>'+n+'</option>';
   var so=['done','playing','want','dropped'].map(function(k){return'<option value="'+k+'"'+(k===x.status?' selected':'')+'>'+ST[k]+'</option>'}).join('');
   var meta=[TN[x.type],x.platform?esc(x.platform):'',x.hours?x.hours+' ч':'',x.date.slice(0,4)].filter(Boolean).join(', ');
-  return'<article class="pc"><div class="poster" data-ava="'+esc(x.id)+'" style="'+(x.pic?'':ph)+'">'+(x.pic?'<img src="'+esc(x.pic)+'" alt="">':esc(x.title.trim().charAt(0).toUpperCase()))+'<span class="st">'+ST[x.status]+'</span>'+(x.fav?'<span class="fv">⭐</span>':'')+(x.rating?'<span class="score" style="background:'+rc(x.rating)+';color:#fff">'+x.rating+'</span>':'')+'</div><div class="t">'+esc(x.title)+'</div><div class="m">'+meta+'</div><div>'+x.tags.map(function(t){return'<span class="tag">'+esc(t)+'</span>'}).join('')+'</div>'+(x.note?'<div class="note">'+esc(x.note)+'</div>':'')+'<div class="ctl edit"><select data-rt="'+esc(x.id)+'" title="Оценка">'+ro+'</select><select data-st="'+esc(x.id)+'" title="Статус">'+so+'</select><button class="sb'+(x.fav?' on':'')+'" data-fav="'+esc(x.id)+'" title="Любимое">'+(x.fav?'★':'☆')+'</button><button class="x" data-del="'+esc(x.id)+'" title="Удалить">×</button></div></article>'}).join('')}
+  return'<article class="pc"><div class="poster" data-ava="'+esc(x.id)+'" style="'+(x.pic?'':ph)+'">'+(x.pic?'<img src="'+esc(x.pic)+'" alt="">':esc(x.title.trim().charAt(0).toUpperCase()))+'<span class="st">'+ST[x.status]+'</span>'+(x.fav?'<span class="fv">⭐</span>':'')+(x.rating?'<span class="score" style="background:'+rc(x.rating)+';color:#fff">'+x.rating+'</span>':'')+'</div><div class="t">'+esc(x.title)+'</div><div class="m">'+meta+'</div><div>'+x.tags.map(function(t){return'<span class="tag">'+esc(t)+'</span>'}).join('')+'</div>'+(x.note?'<div class="note">'+esc(x.note)+'</div>':'')+'<div class="ctl edit"><select data-rt="'+esc(x.id)+'" title="Оценка">'+ro+'</select><select data-st="'+esc(x.id)+'" title="Статус">'+so+'</select><button class="sb'+(x.fav?' on':'')+'" data-fav="'+esc(x.id)+'" title="Любимое">'+(x.fav?'★':'☆')+'</button><button class="x" data-del="'+esc(x.id)+'" title="Удалить">×</button></div>'+(x.type==='game'?'<div class="ctl edit"><input type="number" class="hin" data-h="'+esc(x.id)+'" value="'+(x.hours||'')+'" min="0" step="0.5" placeholder="часов" title="Часов в игре"><button class="chip" type="button" data-hadd="'+esc(x.id)+'" style="padding:4px 10px;font-size:13px">+1 ч</button></div>':'')+'</article>'}).join('')}
 var TH=['auto','dark','light'],TL={auto:'🌓 Тема: авто',dark:'🌙 Тема: тёмная',light:'☀️ Тема: светлая'};
 function applyTheme(){var t=S.theme||'auto';if(t==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',t);$('theme').textContent=TL[t]}
 $('theme').onclick=function(){S.theme=TH[(TH.indexOf(S.theme||'auto')+1)%3];save();applyTheme()};
@@ -235,18 +250,44 @@ $('plist').onclick=function(e){var b=e.target.closest('button');if(!b)return;if(
 var ry='',GM={},SR=[],MN=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
 function tally(a,f){var o={};a.forEach(function(x){[].concat(f(x)).forEach(function(k){if(k)o[k]=(o[k]||0)+1})});return Object.keys(o).sort(function(a,b){return o[b]-o[a]}).map(function(k){return[k,o[k]]})}
 function stat(it,y){var L=it.filter(function(x){return x.status==='done'&&x.date.slice(0,4)===y}),r=L.filter(function(x){return x.rating});return{L:L,n:L.length,h:Math.round(L.reduce(function(a,x){return a+x.hours},0)*10)/10,avg:r.length?(r.reduce(function(a,x){return a+x.rating},0)/r.length).toFixed(1):'—'}}
+var rp='me',rper='all',MS='янв,фев,мар,апр,май,июн,июл,авг,сен,окт,ноя,дек'.split(',');
+function inPer(x){if(rper==='all')return true;if(rper[0]==='y')return x.date.slice(0,4)===rper.slice(1);var d=new Date();d.setMonth(d.getMonth()-(rper==='12m'?12:3));return x.date>=d.toISOString().slice(0,10)}
+function buckets(all){var now=new Date(),b=[];function mk(y,m){return{k:y+'-'+('0'+(m+1)).slice(-2),l:MS[m]}}
+ if(rper[0]==='y'){for(var m=0;m<12;m++)b.push(mk(+rper.slice(1),m))}
+ else if(rper!=='all'){var n=rper==='12m'?12:3;for(var i=n-1;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1);b.push(mk(d.getFullYear(),d.getMonth()))}}
+ else{var ys=all.map(function(x){return+x.date.slice(0,4)}).filter(Boolean).concat([now.getFullYear()]),lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys);
+  if(hi>lo){for(var y=lo;y<=hi;y++)b.push({k:String(y),l:String(y).slice(2)})}else{for(var m2=0;m2<12;m2++)b.push(mk(hi,m2))}}
+ return b}
+function calc(it,b){var L=it.filter(function(x){return x.status==='done'&&inPer(x)}),r=L.filter(function(x){return x.rating}),GH=it.filter(function(x){return x.type==='game'&&x.hours>0&&inPer(x)}),kl=b[0].k.length;
+ function cnt(a,f){return b.map(function(bk){return a.filter(function(x){return x.date.slice(0,kl)===bk.k}).reduce(function(s,x){return s+f(x)},0)})}
+ return{L:L,n:L.length,GH:GH,avg:r.length?(r.reduce(function(a,x){return a+x.rating},0)/r.length).toFixed(1):'—',hrs:Math.round(GH.reduce(function(a,x){return a+x.hours},0)*10)/10,byM:cnt(L,function(){return 1}),hM:cnt(GH,function(x){return x.hours}),rd:[1,2,3,4,5,6,7,8,9,10].map(function(n){return r.filter(function(x){return x.rating===n}).length})}}
+function bars(b,ser,fmt){var mx=1;ser.forEach(function(s){s.v.forEach(function(n){mx=Math.max(mx,n)})});
+ return'<div class="bc">'+b.map(function(x,i){return'<div class="bcg">'+ser.map(function(s){var n=s.v[i];return'<div class="bcb" style="height:'+(n?Math.max(4,n/mx*100):0)+'%;background:'+s.c+'" title="'+n+'">'+(n?'<b>'+(fmt?fmt(n):n)+'</b>':'')+'</div>'}).join('')+'<i>'+x.l+'</i></div>'}).join('')+'</div>'}
+function hbars(rows){var mx=1;rows.forEach(function(r){mx=Math.max(mx,r[1])});return rows.map(function(r){return'<div class="hb"><span title="'+esc(r[0])+'">'+esc(r[0])+'</span><div><u style="width:'+Math.max(3,r[1]/mx*100)+'%;background:'+r[2]+'"></u></div><b>'+r[1]+'</b></div>'}).join('')}
+function rbox(t,body,leg){return'<div class="rbox"><h3>'+t+'</h3>'+(leg||'')+body+'</div>'}
 function recap(){
- var all=S.me.items.filter(function(x){return x.status==='done'}),ys=[];all.forEach(function(x){var y=x.date.slice(0,4);if(ys.indexOf(y)<0)ys.push(y)});ys.sort().reverse();
- if(!ys.length)return'<div class="empty">Итоги появятся, когда будут записи со статусом «Прошёл» или «Посмотрел».</div>';
- if(ys.indexOf(ry)<0)ry=ys[0];
- var A=stat(S.me.items,ry),h='<div style="grid-column:1/-1"><select id="ryear" style="width:auto">'+ys.map(function(y){return'<option'+(y===ry?' selected':'')+'>'+y+'</option>'}).join('')+'</select></div><div class="match">Итоги '+ry+': '+A.n+'</div>';
- h+='<div class="stats" style="grid-column:1/-1">'+TY.map(function(t){var n=A.L.filter(function(x){return x.type===t}).length;return n?'<span>'+TE[t]+' <b>'+n+'</b></span>':''}).join('')+'<span>Средняя: <b>'+A.avg+'</b></span>'+(A.h?'<span>Часов в играх: <b>'+A.h+'</b></span>':'')+'</div>';
- var top=A.L.filter(function(x){return x.rating}).sort(function(a,b){return b.rating-a.rating||b.at-a.at}).slice(0,5);
- if(top.length)h+='<div class="sect">Лучшее за год</div>'+top.map(function(x){return'<div class="cmp"><div class="ct">'+TE[x.type]+' '+esc(x.title)+'</div><div class="chips"><span class="sc" style="background:'+rc(x.rating)+'">'+x.rating+'</span></div></div>'}).join('');
- var gt=tally(A.L,function(x){return x.tags}).slice(0,6);if(gt.length)h+='<div class="sect">Любимые жанры</div><div class="cmp"><div>'+gt.map(function(t){return'<span class="tag">'+esc(t[0])+' · '+t[1]+'</span>'}).join('')+'</div></div>';
- var mo=tally(A.L,function(x){var m=+x.date.slice(5,7);return m>0?MN[m-1]:''})[0];if(mo)h+='<div class="sect">Самый активный месяц</div><div class="cmp"><div class="ct">'+mo[0]+': '+mo[1]+'</div></div>';
- if(S.partner){var B=stat(S.partner.items,ry),ka={};A.L.forEach(function(x){ka[key(x)]=1});var cm=B.L.filter(function(x){return ka[key(x)]}).length,pa=S.me.profile,pb=S.partner.profile;
-  h+='<div class="sect">Вместе</div><div class="cmp"><div class="ct">'+esc(pa.name)+': '+A.n+', средняя '+A.avg+'</div></div><div class="cmp"><div class="ct">'+esc(pb.name)+': '+B.n+', средняя '+B.avg+'</div></div><div class="cmp"><div class="ct">Прошли оба: '+cm+'</div></div>'}
+ var sets=[{id:'me',p:S.me.profile,it:S.me.items,c:S.me.profile.color}];if(S.partner)sets.push({id:'partner',p:S.partner.profile,it:S.partner.items,c:S.partner.profile.color});
+ var all=[].concat.apply([],sets.map(function(s){return s.it})),yrs=[];all.forEach(function(x){var y=x.date.slice(0,4);if(yrs.indexOf(y)<0)yrs.push(y)});yrs.sort().reverse();
+ if(rp==='partner'&&!S.partner||rp==='both'&&!S.partner)rp='me';
+ function opt(v,t){return'<option value="'+v+'"'+(rper===v?' selected':'')+'>'+t+'</option>'}
+ var b=buckets(all),h='<div class="row" style="grid-column:1/-1">'+sets.map(function(s){return'<button class="chip'+(rp===s.id?' on':'')+'" data-rp="'+s.id+'" style="flex:0 0 auto">'+esc(s.p.name)+'</button>'}).join('')+(sets.length>1?'<button class="chip'+(rp==='both'?' on':'')+'" data-rp="both" style="flex:0 0 auto">💞 Вместе</button>':'')+'<select id="rper" style="width:auto;flex:0 0 auto">'+opt('all','Всё время')+opt('12m','Последние 12 месяцев')+opt('3m','Последние 3 месяца')+yrs.map(function(y){return opt('y'+y,y+' год')}).join('')+'</select></div>';
+ var pick=rp==='both'?sets:sets.filter(function(s){return s.id===rp}),D=pick.map(function(s){return{s:s,d:calc(s.it,b)}});
+ if(!D.some(function(o){return o.d.n||o.d.hrs}))return h+'<div class="empty">За этот период нет завершённых записей.</div>';
+ h+=D.map(function(o){var t=TY.map(function(tp){var n=o.d.L.filter(function(x){return x.type===tp}).length;return n?'<span>'+TE[tp]+' <b>'+n+'</b></span>':''}).join('');return'<div class="cmp" style="flex-wrap:wrap"><span style="display:flex;gap:8px;align-items:center">'+av(o.s.p)+'<span class="ct">'+esc(o.s.p.name)+'</span></span><div class="stats"><span>Записей <b>'+o.d.n+'</b></span>'+t+'<span>Средняя <b>'+o.d.avg+'</b></span><span>🎮 Часов <b>'+o.d.hrs+'</b></span></div></div>'}).join('');
+ var leg=D.length>1?'<div class="stats" style="margin:4px 0">'+D.map(function(o){return'<span><b style="color:'+o.s.c+'">●</b> '+esc(o.s.p.name)+'</span>'}).join('')+'</div>':'';
+ if(D.length>1){var ma={},mb={};D[0].d.L.forEach(function(x){ma[key(x)]=x});D[1].d.L.forEach(function(x){mb[key(x)]=x});var cm=Object.keys(ma).filter(function(k){return mb[k]}),rt=cm.filter(function(k){return ma[k].rating&&mb[k].rating}),th=Math.round((D[0].d.hrs+D[1].d.hrs)*10)/10;
+  h+='<div class="match">'+(D[0].d.n+D[1].d.n)+' записей, '+th+' ч в играх</div><div class="m" style="grid-column:1/-1">Прошли оба: '+cm.length+(rt.length?' · совпадение вкусов '+Math.round(100-rt.reduce(function(s,k){return s+Math.abs(ma[k].rating-mb[k].rating)},0)/rt.length*10)+'%':'')+'</div>'}
+ h+=rbox('Сколько прошли',bars(b,D.map(function(o){return{c:o.s.c,v:o.d.byM}})),leg);
+ h+=rbox('Часы в играх',bars(b,D.map(function(o){return{c:o.s.c,v:o.d.hM}}),function(n){return Math.round(n)}),leg);
+ h+=rbox('Какие оценки ставите',bars([1,2,3,4,5,6,7,8,9,10].map(function(n){return{l:String(n)}}),D.map(function(o){return{c:o.s.c,v:o.d.rd}})),leg);
+ var tc=TY.map(function(tp){return[TE[tp]+' '+TN[tp],D.reduce(function(s,o){return s+o.d.L.filter(function(x){return x.type===tp}).length},0),'var(--acc)']}).filter(function(r){return r[1]});
+ if(tc.length)h+=rbox('По типам',hbars(tc));
+ var gt=tally([].concat.apply([],D.map(function(o){return o.d.L})),function(x){return x.tags}).slice(0,8);
+ if(gt.length)h+=rbox('Любимые жанры',hbars(gt.map(function(t){return[t[0],t[1],'var(--teal)']})));
+ var gm=[].concat.apply([],D.map(function(o){return o.d.GH.map(function(x){return[x.title,x.hours,o.s.c]})})).sort(function(a,b){return b[1]-a[1]}).slice(0,6);
+ if(gm.length)h+=rbox('Больше всего часов',hbars(gm));
+ var top=D.length>1&&rt.length?rt.sort(function(a,b){return ma[b].rating+mb[b].rating-ma[a].rating-mb[a].rating}).slice(0,5).map(function(k){return'<div class="cmp" style="margin-bottom:8px"><div class="ct">'+esc(ma[k].title)+'</div><div class="chips">'+sc(D[0].s.p,ma[k].rating)+sc(D[1].s.p,mb[k].rating)+'</div></div>'}):D.length===1?D[0].d.L.filter(function(x){return x.rating}).sort(function(a,b){return b.rating-a.rating||b.at-a.at}).slice(0,5).map(function(x){return'<div class="cmp" style="margin-bottom:8px"><div class="ct">'+TE[x.type]+' '+esc(x.title)+'</div><div class="chips"><span class="sc" style="background:'+rc(x.rating)+'">'+x.rating+'</span></div></div>'}):[];
+ if(top.length)h+=rbox(D.length>1?'Лучшее из общего':'Лучшее',top.join(''));
  return h}
 async function alt(q){var R=[];
  try{var a=await(await fetch('https://www.cheapshark.com/api/1.0/games?limit=6&title='+encodeURIComponent(q))).json();
@@ -274,7 +315,7 @@ async function find(){
 $('find').onclick=find;
 $('title').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();find()}};
 $('sres').onclick=function(e){var b=e.target.closest('[data-sr]');if(!b)return;var r=SR[+b.dataset.sr];if(!r)return;
- $('title').value=r.t+(r.y?' ('+r.y+')':'');if(r.g.length&&!$('tags').value)$('tags').value=r.g.join(', ');if(r.pl&&!$('platform').value)$('platform').value=r.pl;
+ $('title').value=r.t+(r.y?' ('+r.y+')':'');mapG(r.g).forEach(addG);renderG();if(r.pl&&!$('platform').value)$('platform').value=r.pl;
  pic=img(r.p);$('picTxt').textContent=pic?'✅ Обложка':'🖼 Обложка';$('sres').innerHTML='';chk()};
 function plist(){var d={};try{d=JSON.parse(lastRaw||'{}')||{}}catch(e){}var ks=Object.keys(d).filter(function(k){return d[k]&&d[k].profile});
  $('plst').innerHTML=ks.length?ks.map(function(k){var p=prof(d[k].profile);return'<div class="cmp" style="margin-top:6px;padding:6px 10px"><span style="display:flex;gap:8px;align-items:center;min-width:0">'+av(p)+'<span class="ct">'+esc(p.name)+(k===MID?' (ты)':'')+'</span></span><button class="chip" type="button" data-delp="'+esc(k)+'">Удалить</button></div>'}).join(''):'<div class="m">Профилей пока нет.</div>'}
