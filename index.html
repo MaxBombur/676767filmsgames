@@ -99,7 +99,7 @@ dialog::backdrop{background:rgba(10,12,30,.6)}
  <label class="chip pick" style="display:inline-block;margin-top:14px"><input type="file" id="pav" accept="image/*" hidden><span id="pavTxt">🖼 Аватарка</span></label>
  <div class="row" style="margin-top:16px"><button class="btn" id="psave">Сохранить</button></div></div></dialog>
 <dialog id="ddlg"><div style="padding:20px"><h2 style="font:700 20px var(--disp);margin:0 0 14px">Кто ты?</h2><div id="plist"></div></div></dialog>
-<dialog id="cdlg"><div style="padding:20px"><h2 style="font:700 20px var(--disp);margin:0 0 14px">Подключение</h2><div class="m">Адрес базы Firebase Realtime Database</div><input type="text" id="cdb" placeholder="https://имя-проекта-default-rtdb.firebaseio.com"><div class="m" style="margin-top:10px">Код комнаты: одинаковый у вас обоих, не короче 8 символов</div><input type="text" id="croom" maxlength="40"><div class="m" style="margin-top:10px">Ключ TMDB для поиска фильмов, сериалов и аниме (необязательно)</div><input type="text" id="ctmdb"><div class="m" style="margin-top:10px">Ключ RAWG для поиска игр (необязательно)</div><input type="text" id="crawg"><div class="row" style="margin-top:14px"><button class="chip" id="cclose">Закрыть</button><button class="btn" id="csave">Сохранить</button></div><div class="m" style="margin-top:16px">Ссылка для партнёра. Она открывается уже подключённой:</div><input type="text" id="clinkv" readonly><button class="btn alt" id="clink" style="margin-top:8px">Скопировать ссылку</button></div></dialog>
+<dialog id="cdlg"><div style="padding:20px"><h2 style="font:700 20px var(--disp);margin:0 0 14px">Подключение</h2><div class="m">Адрес базы Firebase Realtime Database</div><input type="text" id="cdb" placeholder="https://имя-проекта-default-rtdb.firebaseio.com"><div class="m" style="margin-top:10px">Код комнаты: одинаковый у вас обоих, не короче 8 символов</div><input type="text" id="croom" maxlength="40"><div class="m" style="margin-top:10px">Ключ TMDB для поиска фильмов, сериалов и аниме (необязательно)</div><input type="text" id="ctmdb"><div class="m" style="margin-top:10px">Ключ RAWG для поиска игр (необязательно)</div><input type="text" id="crawg"><div class="row" style="margin-top:14px"><button class="chip" id="cclose">Закрыть</button><button class="btn" id="csave">Сохранить</button></div><div class="m" style="margin-top:16px">Ссылка для партнёра. Она открывается уже подключённой:</div><input type="text" id="clinkv" readonly><button class="btn alt" id="clink" style="margin-top:8px">Скопировать ссылку</button><div class="m" style="margin-top:18px">Профили в комнате. Удаление стирает профиль вместе со всеми его записями:</div><div id="plst"></div></div></dialog>
 <input type="file" id="pic2" accept="image/*" hidden>
 </main>
 <script>
@@ -112,7 +112,7 @@ try{CF=JSON.parse(localStorage.getItem(K+'-cfg'))}catch(e){}
 try{var hm=location.hash.match(/#c=([^&]+)/);if(hm){CF=JSON.parse(decodeURIComponent(escape(atob(hm[1]))));localStorage.setItem(K+'-cfg',JSON.stringify(CF));history.replaceState(null,'',location.pathname+location.search)}}catch(e){}
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function img(s){return typeof s==='string'&&(s.indexOf('data:image/')===0||/^https:\/\/(image\.tmdb\.org|media\.rawg\.io|covers\.openlibrary\.org)\//.test(s))?s:''}
+function img(s){return typeof s==='string'&&(s.indexOf('data:image/')===0||/^https:\/\/(image\.tmdb\.org|media\.rawg\.io|covers\.openlibrary\.org|upload\.wikimedia\.org|cdn\.cloudflare\.steamstatic\.com)\//.test(s))?s:''}
 function norm(x){x.status=['done','playing','want','dropped'].indexOf(x.status)>-1?x.status:'done';x.type=TY.indexOf(x.type)>-1?x.type:'game';x.title=String(x.title||'');x.tags=Array.isArray(x.tags)?x.tags.map(String).slice(0,8):[];x.platform=String(x.platform||'');x.note=String(x.note||'');x.rating=Math.max(0,Math.min(10,+x.rating||0));x.hours=Math.max(0,+x.hours||0);if(x.fav===undefined)x.fav=x.rating>=9;x.fav=!!x.fav;x.pic=img(x.pic);x.date=String(x.date||new Date(x.at||Date.now()).toISOString().slice(0,10));x.at=+x.at||Date.now();x.id=String(x.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5));return x}
 function prof(p){return{name:String(p&&p.name||'?').slice(0,24),color:/^#[0-9a-f]{6}$/i.test(p&&p.color)?p.color:'#888888',avatar:img(p&&p.avatar)}}
 function save(){try{localStorage.setItem(K+'-theme',S.theme)}catch(e){}}
@@ -243,33 +243,47 @@ function recap(){
  if(S.partner){var B=stat(S.partner.items,ry),ka={};A.L.forEach(function(x){ka[key(x)]=1});var cm=B.L.filter(function(x){return ka[key(x)]}).length,pa=S.me.profile,pb=S.partner.profile;
   h+='<div class="sect">Вместе</div><div class="cmp"><div class="ct">'+esc(pa.name)+': '+A.n+', средняя '+A.avg+'</div></div><div class="cmp"><div class="ct">'+esc(pb.name)+': '+B.n+', средняя '+B.avg+'</div></div><div class="cmp"><div class="ct">Прошли оба: '+cm+'</div></div>'}
  return h}
+async function alt(q){var R=[];
+ try{var a=await(await fetch('https://www.cheapshark.com/api/1.0/games?limit=6&title='+encodeURIComponent(q))).json();
+  (a||[]).forEach(function(g){if(g.steamAppID)R.push({t:g.external,y:'',p:'https://cdn.cloudflare.steamstatic.com/steam/apps/'+encodeURIComponent(g.steamAppID)+'/library_600x900.jpg',g:[],pl:'PC'})})}catch(e){}
+ try{var w=await(await fetch('https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrlimit=5&prop=pageimages&piprop=thumbnail&pithumbsize=300&format=json&origin=*&gsrsearch='+encodeURIComponent(q+' video game'))).json();
+  Object.values((w.query&&w.query.pages)||{}).sort(function(a,b){return a.index-b.index}).forEach(function(p){R.push({t:p.title.replace(/\s*\(.*\)$/,''),y:'',p:p.thumbnail?p.thumbnail.source:'',g:[],pl:''})})}catch(e){}
+ return R}
 function need(n){return'<div class="m">Нужен ключ '+n+': добавь его в «Подключение и ссылка для партнёра».</div>'}
-async function genres(kind,k){if(!GM[kind]){var j=await(await fetch('https://api.themoviedb.org/3/genre/'+kind+'/list?language=ru-RU&api_key='+encodeURIComponent(k))).json(),m={};(j.genres||[]).forEach(function(g){m[g.id]=g.name});GM[kind]=m}return GM[kind]}
+function tmf(p,k){var h={},u='https://api.themoviedb.org/3/'+p;if(k.length>40)h.Authorization='Bearer '+k;else u+=(u.indexOf('?')>-1?'&':'?')+'api_key='+encodeURIComponent(k);return fetch(u,{headers:h}).then(function(r){if(r.status===401)throw'key';return r.json()})}
+async function genres(kind,k){if(!GM[kind]){var j=await tmf('genre/'+kind+'/list?language=ru-RU',k),m={};(j.genres||[]).forEach(function(g){m[g.id]=g.name});GM[kind]=m}return GM[kind]}
 async function find(){
  var q=$('title').value.trim(),box=$('sres');if(!q)return;box.innerHTML='<div class="m">Ищу…</div>';var R=[],j;
  try{
-  if(type==='game'){if(!(CF&&CF.rawg)){box.innerHTML=need('RAWG');return}
-   j=await(await fetch('https://api.rawg.io/api/games?key='+encodeURIComponent(CF.rawg)+'&page_size=6&search='+encodeURIComponent(q))).json();
-   R=(j.results||[]).map(function(g){return{t:g.name,y:(g.released||'').slice(0,4),p:g.background_image||'',g:(g.genres||[]).map(function(x){return x.name}).slice(0,3),pl:g.platforms&&g.platforms[0]?g.platforms[0].platform.name:''}})}
+  if(type==='game'){if(!(CF&&CF.rawg)){R=await alt(q)}else{j=await fetch('https://api.rawg.io/api/games?key='+encodeURIComponent(CF.rawg)+'&page_size=6&search='+encodeURIComponent(q)).then(function(r){if(r.status===401||r.status===403)throw'key';return r.json()});
+   R=(j.results||[]).map(function(g){return{t:g.name,y:(g.released||'').slice(0,4),p:g.background_image||'',g:(g.genres||[]).map(function(x){return x.name}).slice(0,3),pl:g.platforms&&g.platforms[0]?g.platforms[0].platform.name:''}})}}
   else if(type==='book'){j=await(await fetch('https://openlibrary.org/search.json?limit=6&fields=title,first_publish_year,cover_i,subject&q='+encodeURIComponent(q))).json();
    R=(j.docs||[]).map(function(d){return{t:d.title,y:d.first_publish_year||'',p:d.cover_i?'https://covers.openlibrary.org/b/id/'+d.cover_i+'-M.jpg':'',g:(d.subject||[]).slice(0,3),pl:''}})}
   else{if(!(CF&&CF.tmdb)){box.innerHTML=need('TMDB');return}
    var kind=type==='movie'?'movie':'tv';
-   j=await(await fetch('https://api.themoviedb.org/3/search/'+kind+'?language=ru-RU&api_key='+encodeURIComponent(CF.tmdb)+'&query='+encodeURIComponent(q))).json();
+   j=await tmf('search/'+kind+'?language=ru-RU&query='+encodeURIComponent(q),CF.tmdb);
    var gm=await genres(kind,CF.tmdb);
    R=(j.results||[]).slice(0,6).map(function(m){return{t:m.title||m.name,y:(m.release_date||m.first_air_date||'').slice(0,4),p:m.poster_path?'https://image.tmdb.org/t/p/w342'+m.poster_path:'',g:(m.genre_ids||[]).map(function(i){return gm[i]}).filter(Boolean).slice(0,3),pl:''}})}
- }catch(e){box.innerHTML='<div class="m">Не удалось найти. Проверь ключ и интернет.</div>';return}
+ }catch(e){box.innerHTML='<div class="m">'+(e==='key'?'Ключ не подошёл. Проверь, что он скопирован целиком и без пробелов.':'Не удалось найти. Проверь ключ и интернет.')+'</div>';return}
  SR=R;box.innerHTML=R.length?R.map(function(r,i){return'<button class="chip" type="button" data-sr="'+i+'" style="display:flex;gap:10px;align-items:center;width:100%;text-align:left;margin-top:6px;border-radius:12px"><span class="ava" style="width:34px;height:48px;border-radius:6px;font-size:14px">'+(img(r.p)?'<img src="'+esc(r.p)+'" alt="">':'')+'</span><span>'+esc(r.t)+' <span class="m">'+esc(r.y)+'</span></span></button>'}).join(''):'<div class="m">Ничего не найдено.</div>'}
 $('find').onclick=find;
 $('title').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();find()}};
 $('sres').onclick=function(e){var b=e.target.closest('[data-sr]');if(!b)return;var r=SR[+b.dataset.sr];if(!r)return;
  $('title').value=r.t+(r.y?' ('+r.y+')':'');if(r.g.length&&!$('tags').value)$('tags').value=r.g.join(', ');if(r.pl&&!$('platform').value)$('platform').value=r.pl;
  pic=img(r.p);$('picTxt').textContent=pic?'✅ Обложка':'🖼 Обложка';$('sres').innerHTML='';chk()};
+function plist(){var d={};try{d=JSON.parse(lastRaw||'{}')||{}}catch(e){}var ks=Object.keys(d).filter(function(k){return d[k]&&d[k].profile});
+ $('plst').innerHTML=ks.length?ks.map(function(k){var p=prof(d[k].profile);return'<div class="cmp" style="margin-top:6px;padding:6px 10px"><span style="display:flex;gap:8px;align-items:center;min-width:0">'+av(p)+'<span class="ct">'+esc(p.name)+(k===MID?' (ты)':'')+'</span></span><button class="chip" type="button" data-delp="'+esc(k)+'">Удалить</button></div>'}).join(''):'<div class="m">Профилей пока нет.</div>'}
+$('plst').onclick=function(e){var b=e.target.closest('[data-delp]');if(!b)return;
+ if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Точно удалить?';b.style.color='var(--acc)';setTimeout(function(){b.dataset.arm='';b.textContent='Удалить';b.style.color=''},4000);return}
+ var id=b.dataset.delp,own=id===MID;b.disabled=true;
+ sync(api('DELETE',id)).then(function(){lastRaw='';loaded=false;
+  if(own){MID=null;localStorage.removeItem(K+'-me');S.me={profile:null,items:[]};asked=false;$('cdlg').close()}
+  return pull()}).then(function(){plist();render()})};
 var VER;
-function pull(){if(!CF||busy)return Promise.resolve();return api('GET','_v').then(function(v){if(loaded&&v===VER)return;return api('GET','').then(function(d){VER=v;loaded=true;var ch=applyRemote(d);if(!MID)choose(d||{});if(ch||!S.me.profile)render()})}).catch(function(){setMsg('Нет связи с базой. Проверь адрес в «Подключении».')})}
+function pull(){if(!CF||busy)return Promise.resolve();return api('GET','_v').then(function(v){if(loaded&&v===VER)return;return api('GET','').then(function(d){VER=v;loaded=true;var ch=applyRemote(d);if(MID&&!(d&&d[MID])){MID=null;localStorage.removeItem(K+'-me');S.me={profile:null,items:[]};asked=false}if(!MID)choose(d||{});if(ch||!S.me.profile)render()})}).catch(function(){setMsg('Нет связи с базой. Проверь адрес в «Подключении».')})}
 function rnd(n){var a=new Uint8Array(n),r='';crypto.getRandomValues(a);for(var i=0;i<n;i++)r+='abcdefghijkmnpqrstuvwxyz23456789'[a[i]%32];return r}
 function link(){return CF&&location.protocol.indexOf('http')===0?location.origin+location.pathname+'#c='+btoa(unescape(encodeURIComponent(JSON.stringify(CF)))):'Сначала выложи страницу в интернет (см. инструкцию), тогда здесь появится ссылка.'}
-function openCfg(){$('cdb').value=CF?CF.db:'';$('croom').value=CF?CF.room:rnd(14);$('ctmdb').value=CF&&CF.tmdb||'';$('crawg').value=CF&&CF.rawg||'';$('clinkv').value=link();$('cdlg').showModal()}
+function openCfg(){$('cdb').value=CF?CF.db:'';$('croom').value=CF?CF.room:rnd(14);$('ctmdb').value=CF&&CF.tmdb||'';$('crawg').value=CF&&CF.rawg||'';$('clinkv').value=link();plist();$('cdlg').showModal()}
 $('cfgopen').onclick=openCfg;$('cclose').onclick=function(){$('cdlg').close()};
 $('csave').onclick=function(){var db=$('cdb').value.trim().replace(/\/+$/,''),rm=$('croom').value.trim().replace(/[^A-Za-z0-9_-]/g,'');if(!/^https:\/\//.test(db)||rm.length<8){$('clinkv').value='Нужен адрес базы (https://…) и код комнаты от 8 символов.';return}CF={db:db,room:rm,tmdb:$('ctmdb').value.trim(),rawg:$('crawg').value.trim()};localStorage.setItem(K+'-cfg',JSON.stringify(CF));lastRaw='';asked=false;loaded=false;$('cdlg').close();render();pull()};
 $('clink').onclick=function(){var v=link();$('clinkv').select();try{navigator.clipboard.writeText(v);$('clink').textContent='Скопировано ✅'}catch(e){}};
